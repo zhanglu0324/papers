@@ -1,0 +1,10 @@
+# CSV file
+# maybe we need .csv file
+# *.csv 
+
+# project file
+.spyproject
+
+# cache file
+__pycache__
+
