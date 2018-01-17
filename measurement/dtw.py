@@ -14,7 +14,7 @@ def AccumulatedCostMatrix(Q, C, fun):
     
     for i in range(n):
         for j in range(m):
-            dist[i][j] = fun([i,Q[i]], [j,C[j]])
+            dist[i][j] = fun(Q[i], C[j])
     
     dtw = np.zeros([n, m], dtype=np.float)
     dtw[0][0] = dist[0][0]
@@ -37,7 +37,8 @@ def OptimalWarpingPath(dtw):
     i = len(dtw) - 1
     j = len(dtw[0]) - 1
     res = dtw[i][j]
-    
+
+    path.append((i, j))
     while i > 0 and j > 0:
         if i == 0:
             j -= 1

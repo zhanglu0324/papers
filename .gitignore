@@ -4,6 +4,7 @@
 
 # project file
 .spyproject
+.idea
 
 # cache file
 __pycache__
