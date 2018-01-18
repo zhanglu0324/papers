@@ -4,63 +4,48 @@
 # DTW: Dynamic Time Warping
  
 import numpy as np
+from scipy.spatial.distance import cdist
 
 
-def AccumulatedCostMatrix(Q, C, fun):
-    n = len(Q)
-    m = len(C)
-    
-    dist = np.zeros([n, m], dtype=np.float)
-    
-    for i in range(n):
-        for j in range(m):
-            dist[i][j] = fun(Q[i], C[j])
-    
-    dtw = np.zeros([n, m], dtype=np.float)
-    dtw[0][0] = dist[0][0]
-    
-    for i in range(1, n):
-        dtw[i][0] = dtw[i-1][0] + dist[i][0]
-    
-    for j in range(1, m):
-        dtw[0][j] = dtw[0][j-1] + dist[0][j]
-    
-    for i in range(1, n):
-        for j in range(1, m):
-            dtw[i][j] = dist[i][j] + min([dtw[i-1][j], dtw[i][j-1], dtw[i-1][j-1]])
-    
-    return dtw
+def dtw(Q, C, dist):
+    m, n = len(Q), len(C)
+    D = np.zeros([m+1, n+1], dtype=np.float)
+    D[0, 1:] = np.inf
+    D[1:, 0] = np.inf
+
+    D1 = D[1:, 1:]
+    # for i in range(m):
+    #     for j in range(n):
+    #         D1[i, j] = dist(Q[i], C[j])
+    D[1:, 1:] = cdist(Q, C, dist)
+    C1 = D1.copy()
+
+    for i in range(m):
+        for j in range(n):
+            D1[i, j] += min(D[i, j], D[i+1, j], D[i, j+1])
+
+    if len(Q) == 1:
+        path = np.zeros(len(C)), range(len(C))
+    elif len(C) == 1:
+        path = range(len(Q)), np.zeros(len(Q))
+    else:
+        path = _traceback(D)
+    return D1[-1, -1] / sum(D1.shape), C1, D1, path
 
 
-def OptimalWarpingPath(dtw):
-    path = []
-    i = len(dtw) - 1
-    j = len(dtw[0]) - 1
-    res = dtw[i][j]
-
-    path.append((i, j))
-    while i > 0 and j > 0:
-        if i == 0:
+def _traceback(D):
+    i, j = np.array(D.shape) - 2
+    p, q = [i], [j]
+    while i > 0 or j > 0:
+        tmp = np.argmin((D[i, j], D[i, j+1], D[i+1, j]))
+        if tmp == 0:
+            i -= 1
             j -= 1
-        elif j == 0:
+        elif tmp == 1:
             i -= 1
         else:
-            min_val = min([dtw[i-1][j], dtw[i][j-1], dtw[i-1][j-1]])
-            if dtw[i-1][j] == min_val:
-                i -= 1
-            elif dtw[i][j-1] == min_val:
-                j -= 1
-            else:
-                i -= 1
-                j -= 1
-        path.append((i, j))
-        
-    return res, path, dtw
+            j -= 1
+        p.insert(0, i)
+        q.insert(0, j)
+    return np.array(p), np.array(q)
 
-
-def DTW(Q, C, fun):
-    dtw = AccumulatedCostMatrix(Q, C, fun)
-    return OptimalWarpingPath(dtw)
-
-
-    
