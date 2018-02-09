@@ -16,6 +16,7 @@ sec_ac = []
 for i in pos:
     sec_ac.append(adj_close[i])
 
-plt.plot(index, adj_close)
-plt.plot(pos, sec_ac)
+plt.plot(index, adj_close, label="adj_close", c="b")
+plt.plot(pos, sec_ac, "x-", label="PLR", c="g")
+plt.legend()
 plt.show()
