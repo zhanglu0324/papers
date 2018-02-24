@@ -1,6 +1,7 @@
 # =============================================================================
 # useful code: apple -> AAPL, S&P 500 -> ^GSPC 
 # =============================================================================
+
 from data.pandas_datareader import web_reader
 from datetime import datetime
 

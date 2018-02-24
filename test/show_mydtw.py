@@ -20,11 +20,12 @@ a2 = adj_close[start: start+offset].values
 dist = lambda x, y: np.linalg.norm(np.array(x)-np.array(y), ord=2)
 
 # res, path, acc = DTW(a1, a2, fun=dist)
-res, cost, acc, path = dtw(np.array(a1).reshape(-1, 1), np.array(a2).reshape(-1, 1), dist=lambda x, y: np.linalg.norm(x-y, ord=2))
+import math
+res, cost, acc, path = dtw(np.array(a1).reshape(-1, 1), np.array(a2).reshape(-1, 1), dist=lambda x, y: abs(x-y))
 
 print("res1", res)
 
-dist2, cost2, acc2, path2 = thedtw.dtw(np.array(a1).reshape(-1, 1), np.array(a2).reshape(-1, 1), dist=lambda x, y: np.linalg.norm(x - y, ord=2))
+dist2, cost2, acc2, path2 = thedtw.dtw(np.array(a1).reshape(-1, 1), np.array(a2).reshape(-1, 1), dist=lambda x, y: np.linalg.norm(x - y, ord=1))
 
 print("res2", dist2)
 print("acc1")
