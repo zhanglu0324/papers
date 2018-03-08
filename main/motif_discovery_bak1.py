@@ -1,8 +1,9 @@
+# plan A, big change and no solution
+
 from data.data_loader import data_loader
 from preprocessing.up2down import up2down
 from sklearn.preprocessing import scale
 import numpy as np
-
 
 prices = data_loader('../data/')
 
@@ -18,7 +19,7 @@ for price in prices:
 
     barrel = []
     for index_ in range(len(u2d_adj_close_index) - u2d_split_length):
-        feature_point_index = u2d_adj_close_index[index_: u2d_split_length]
+        feature_point_index = u2d_adj_close_index[index_: index_+u2d_split_length]
         feature_point_values = [0] * u2d_split_length
         for i_ in range(u2d_split_length):
             feature_point_values[i_] = adj_close[feature_point_index[i_]]
@@ -28,6 +29,7 @@ for price in prices:
     nn_distance = np.zeros([barrel_length, barrel_length], dtype=np.float)
     for i_ in range(barrel_length - 1):
         for j_ in range(i_+1, barrel_length):
+            # TODO: distance
             pass
 
 

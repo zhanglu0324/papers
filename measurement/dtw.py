@@ -14,10 +14,10 @@ def dtw(Q, C, dist):
     D[1:, 0] = np.inf
 
     D1 = D[1:, 1:]
-    # for i in range(m):
-    #     for j in range(n):
-    #         D1[i, j] = dist(Q[i], C[j])
-    D[1:, 1:] = cdist(Q, C, dist)
+    for i in range(m):
+        for j in range(n):
+            D1[i, j] = dist(Q[i], C[j])
+    # D[1:, 1:] = cdist(Q, C, dist)
     C1 = D1.copy()
 
     for i in range(m):

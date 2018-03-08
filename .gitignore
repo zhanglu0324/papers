@@ -9,3 +9,5 @@
 # cache file
 __pycache__
 
+# Mac file
+.DS_Store
