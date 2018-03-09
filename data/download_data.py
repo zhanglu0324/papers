@@ -2,11 +2,15 @@
 # useful code: apple -> AAPL, S&P 500 -> ^GSPC 
 # =============================================================================
 
-from data.pandas_datareader import web_reader
+import pandas_datareader.data as web
 from datetime import datetime
 
-codes = ['^GSPC', 'AAPL', '^DJI']
+def web_reader(code, start, end):
+    return web.DataReader(code, 'iex', start, end)
+
+
+codes = ['SPY', 'AAPL', 'VTI']
 for code in codes:
-    prices = web_reader(code, datetime(2015, 1, 1), datetime(2017, 12, 30))
+    prices = web_reader(code, datetime(2014, 1, 1), datetime(2018, 3, 1))
     prices.to_csv(code+'.csv')
 

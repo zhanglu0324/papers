@@ -19,6 +19,9 @@ u2d_error = 0.02
 u2d_split_length = 8
 cutoff_present = 0.02
 cluster_num = 10
+train_present = 0.8
+test_present = 0.2
+prediction_step_length = 5
 # ----------------------
 
 for path in os.listdir(data_dir):
@@ -27,15 +30,21 @@ for path in os.listdir(data_dir):
         price = pd.read_csv(os.path.join(data_dir, path))
         name = opst[0]
 
-        adj_close = price.iloc[:, 5].values
+        adj_close = price.iloc[:, 4].values
         adj_close = scale(adj_close)
-        u2d_adj_close_index = up2down(adj_close, u2d_error)
+        
+        adj_close_data_length = len(adj_close)
+        train_data = adj_close[int(adj_close_data_length * train_present):]
+        test_data = adj_close[:int(adj_close_data_length * test_present)]
+        
+        # ------- Pattern Discovery -------
+        u2d_adj_close_index = up2down(train_data, u2d_error)
 
         barrel = []
         for index_ in range(len(u2d_adj_close_index) - u2d_split_length):
             feature_point_index_0, feature_point_index_1 = u2d_adj_close_index[index_], u2d_adj_close_index[
                 index_ + u2d_split_length]
-            feature_point_values = adj_close[feature_point_index_0: feature_point_index_1]
+            feature_point_values = train_data[feature_point_index_0: feature_point_index_1]
             barrel.append(feature_point_values)
 
         barrel_length = len(barrel)
@@ -107,6 +116,13 @@ for path in os.listdir(data_dir):
             center_avg_length += len(c)
 
         center_avg_length = round(center_avg_length/cluster_num)
+        
+        # ------- Prediction -------
+        split_length = center_avg_length - prediction_step_length
+        for i in range(len(test_data) - split_length):
+            local_segment = test_data[i: i+split_length]
+            # TODO: Match Scheme
+            
 
 
 
