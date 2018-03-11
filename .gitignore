@@ -11,3 +11,6 @@ __pycache__
 
 # Mac file
 .DS_Store
+
+# pictures
+mvm_res

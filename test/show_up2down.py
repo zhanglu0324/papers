@@ -1,14 +1,16 @@
 import pandas as pd
 from preprocessing.up2down import up2down
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import scale
 
-prices = pd.read_csv("../data/^GSPC.csv") 
+prices = pd.read_csv("../data/AAPL.csv") 
 adj_close = prices.iloc[:, 3]
 index = prices.index
 
 begin = 0
 end = 100
 adj_close = adj_close[begin:end]
+adj_close = scale(adj_close)
 index = index[begin:end]
 
 pos = up2down(adj_close, 0.02)
