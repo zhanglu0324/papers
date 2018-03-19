@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 不修改原数据，切分使用特征点
+2018-03-19：统一cutoff_distance与delta阈值，设立补集概念
 """
 
 from preprocessing.up2down import up2down
@@ -18,8 +19,7 @@ import pandas as pd
 data_dir = '../data/'
 u2d_error = 0.015
 u2d_split_length = 15
-cutoff_present = 0.05
-cluster_num = 10
+cutoff_present = 0.10
 train_present = 0.8
 test_present = 0.2
 prediction_step_length = 5
@@ -83,17 +83,58 @@ for path in os.listdir(data_dir):
                     if delta[i] < nn_distance[i][j]:
                         delta[i] = nn_distance[i][j]
 
+        rho_threshold = max(rho)/3.0
+        
         c_rho = []
         c_delta = []
-
-        mul_res = np.zeros(barrel_length, dtype=np.float)
         center_set = []
+        
+# =============================================================================
+#         for i in range(barrel_length):
+#             if rho[i]>rho_threshold and delta[i]>cutoff_distance:
+#                 c_rho.append(rho[i])
+#                 c_delta.append(delta[i])
+#                 center_tmp = scale(barrel[i])
+#                 center_set.append(center_tmp)
+# =============================================================================
+        
+        center_index = [np.argmax(rho)]
+        sorted_rho = list(rho)
+        sorted_rho.sort(reverse=True)
+        for i in range(1, barrel_length):
+            if sorted_rho[i] > rho_threshold:
+                flag = 1
+                this_index = list(rho).index(sorted_rho[i])
+                for tmp_index in center_index:
+                    if nn_distance[tmp_index][this_index] < cutoff_distance:
+                        flag = 0
+                        break
+                if flag:
+                    center_index.append(this_index)
+        
+        for tmp_index in center_index:
+            center_set.append(scale(barrel[tmp_index]))
+            c_rho.append(rho[tmp_index])
+            c_delta.append(delta[tmp_index])
+                    
+            
+            
+            
+            
+            
+        
+        
+        cluster_num = len(center_set)
 
-        for i in range(barrel_length):
-            mul_res[i] = rho[i] * delta[i]
-            top_k = heapq.nlargest(cluster_num, mul_res)
+        plt.scatter(rho, delta, c="k")
+        plt.scatter(c_rho, c_delta, c="r")
+        plt.plot([0,max(rho)],[cutoff_distance]*2, '--', c='b')
+        plt.plot([rho_threshold]*2,[0,max(delta)], '--', c='b')
+        plt.savefig('exp_res/'+name+'.pdf')
+        plt.clf()
 
-        print(name)
+
+        print(name+': '+str(cluster_num))
 # =============================================================================
 #         print(barrel_length)
 #         print(rho)
@@ -103,19 +144,7 @@ for path in os.listdir(data_dir):
 #         print('\n')
 # =============================================================================
 
-        for i in range(barrel_length):
-            if mul_res[i] in top_k:
-                c_rho.append(rho[i])
-                c_delta.append(delta[i])
-                center_tmp = scale(barrel[i])
-                center_set.append(center_tmp)
-
-        plt.scatter(rho, delta, c="k")
-        plt.scatter(c_rho, c_delta, c="r")
-        plt.plot([0,max(rho)],[cutoff_distance]*2, '--', c='b')
-        plt.savefig('exp_res/'+name+'.pdf')
-        plt.clf()
-
+        
 # =============================================================================
 #         center_length = []
 #         for c in center_set:
@@ -131,6 +160,8 @@ for path in os.listdir(data_dir):
         
         exp_total = np.ones(prediction_step_length, dtype=np.float)
         exp_right = np.ones(prediction_step_length, dtype=np.float)
+        exp_total_count = 0
+        exp_miss_count = 0
         
         debug_cnt = 0
         for i in range(len(test_data) - split_length):
@@ -180,9 +211,14 @@ for path in os.listdir(data_dir):
                     exp_total[i] += 1
                     if (res[i]-last_x) * (valid_segment[i]-last_x) > 0:
                         exp_right[i] += 1
+                else:
+                    exp_miss_count += 1
+                    break
+            exp_total_count += 1
             
         evaluation_res = exp_right/exp_total
         print(evaluation_res)
+        print("miss rate: ", exp_miss_count*1.0/exp_total_count)
 # =============================================================================
 #              # draw picture with res
 #             plt.figure(figsize=(10, 8))

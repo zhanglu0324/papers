@@ -5,7 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt 
 
 t1 = [1, 2, 8, 6, 8]
-t2 = [3, 1, 2, 9, 3, 3, 5, 9, 6]
+t2 = [1, 2, 9, 3, 3, 5, 9]
 
 def minimal_variance_matching(query, target, skip_elements=2):
     m = len(query)
@@ -54,7 +54,7 @@ def minimal_variance_matching(query, target, skip_elements=2):
     
     distance=nx.dijkstra_path_length(G, source=-1, target=-2)
     
-    plt.figure(figsize=(12, 10))
+    plt.figure(figsize=(6, 4))
     nx.draw(G, with_labels=True, font_weight='bold')
     plt.savefig("mvm_network_picture.png")
     plt.clf()
@@ -67,11 +67,12 @@ correspondence, distance = minimal_variance_matching(t1, t2)
 # 绘制示意图
 t3 = list(map(lambda x:x+8, t2))
 X1 = list(range(len(t2))) 
-plt.plot(X1, t3, '-x', c='k')
+plt.plot(X1, t3, '-x', c='k', label='T')
 path_0, path_1 = list(zip(*correspondence))
 X2 = list(map(lambda x:x+(path_1[-1]+path_1[0]-len(t1))/2, path_0))
-plt.plot(X2, t1, '->', c='r')
+plt.plot(X2, t1, '->', c='r', label='Q')
 for i in range(len(t1)):
     plt.plot([X2[i], path_1[i]], [t1[i], t3[path_1[i]]], '--', c='k')
+plt.legend()
 plt.show()
 

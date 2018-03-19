@@ -3,7 +3,7 @@ from preprocessing.up2down import up2down
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import scale
 
-prices = pd.read_csv("../data/AAPL.csv") 
+prices = pd.read_csv("../data/bak/^GSPC.csv") 
 adj_close = prices.iloc[:, 3]
 index = prices.index
 
