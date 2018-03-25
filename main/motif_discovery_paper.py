@@ -17,8 +17,8 @@ import pandas as pd
 
 # ------- Config -------
 data_dir = '../data/'
-u2d_error = 0.015
-u2d_split_length = 15
+u2d_error = 0.02
+u2d_split_length = 12
 cutoff_present = 0.10
 train_present = 0.8
 test_present = 0.2
@@ -35,8 +35,10 @@ for path in os.listdir(data_dir):
         adj_close = scale(adj_close)
         
         adj_close_data_length = len(adj_close)
-        train_data = adj_close[int(adj_close_data_length * train_present):]
-        test_data = adj_close[:int(adj_close_data_length * test_present)]
+        
+        tt_threshold = int(adj_close_data_length * train_present)
+        train_data = adj_close[:tt_threshold]
+        test_data = adj_close[tt_threshold:]
         
         # ------- Pattern Discovery -------
         u2d_adj_close_index = up2down(train_data, u2d_error)
@@ -116,20 +118,19 @@ for path in os.listdir(data_dir):
             center_set.append(scale(barrel[tmp_index]))
             c_rho.append(rho[tmp_index])
             c_delta.append(delta[tmp_index])
-                    
-            
-            
-            
-            
-            
-        
+       
         
         cluster_num = len(center_set)
 
-        plt.scatter(rho, delta, c="k")
-        plt.scatter(c_rho, c_delta, c="r")
-        plt.plot([0,max(rho)],[cutoff_distance]*2, '--', c='b')
+        plt.scatter(rho, delta, c="k", label=r'$\complement_S R$')
+        plt.scatter(c_rho, c_delta, c="r", label=r'$R$')
         plt.plot([rho_threshold]*2,[0,max(delta)], '--', c='b')
+        plt.annotate(r'$\rho_c$',xy=(rho_threshold, max(delta)*0.6),
+                     xytext=(rho_threshold*1.3, max(delta)*0.8), 
+                     arrowprops=dict(facecolor='k', headlength=10, headwidth=5, width=1))
+        plt.xlabel(r'$\rho$')
+        plt.ylabel(r'$\delta$')
+        plt.legend()
         plt.savefig('exp_res/'+name+'.pdf')
         plt.clf()
 
@@ -144,22 +145,13 @@ for path in os.listdir(data_dir):
 #         print('\n')
 # =============================================================================
 
-        
-# =============================================================================
-#         center_length = []
-#         for c in center_set:
-#             center_length.append(len(c))
-# 
-#         min_center_length = min(center_length)
-#         
-#         print(min_center_length)
-# =============================================================================
-        
+              
         # ------- Prediction -------
         split_length = u2d_split_length
         
         exp_total = np.ones(prediction_step_length, dtype=np.float)
         exp_right = np.ones(prediction_step_length, dtype=np.float)
+        RMSE = np.ones(prediction_step_length, dtype=np.float)
         exp_total_count = 0
         exp_miss_count = 0
         
@@ -209,6 +201,7 @@ for path in os.listdir(data_dir):
             for i in range(prediction_step_length):
                 if (res[i]-last_x) != 0:
                     exp_total[i] += 1
+                    RMSE[i] += pow(valid_segment[i]-res[i], 2)
                     if (res[i]-last_x) * (valid_segment[i]-last_x) > 0:
                         exp_right[i] += 1
                 else:
@@ -216,18 +209,16 @@ for path in os.listdir(data_dir):
                     break
             exp_total_count += 1
             
-        evaluation_res = exp_right/exp_total
-        print(evaluation_res)
-        print("miss rate: ", exp_miss_count*1.0/exp_total_count)
+        
 # =============================================================================
-#              # draw picture with res
-#             plt.figure(figsize=(10, 8))
+#             # draw picture with res
+#             plt.figure(figsize=(6, 4))
 #             Y2 = list(map(lambda x:x+3, mvm_target))
 #             X2 = list(range(len(mvm_target))) 
-#             plt.plot(X2, Y2, '-x', c='k', label='target subseqence')
+#             plt.plot(X2, Y2, '-x', c='k', label='target')
 #             path_0, path_1 = list(zip(*mvm_target_cor))
 #             X1 = list(map(lambda x:x+(path_1[-1]+path_1[0]-split_length)/2, path_0))
-#             plt.plot(X1, local_segment, '->', c='r', label='query subseqence')
+#             plt.plot(X1, local_segment, '->', c='r', label='query')
 #             for i in range(len(local_segment)):
 #                 plt.plot([X1[i], path_1[i]], [local_segment[i], Y2[path_1[i]]], '--', c='k')
 #             
@@ -236,16 +227,21 @@ for path in os.listdir(data_dir):
 #             Y4 = np.append(local_segment[-1], valid_segment)
 #             plt.plot(X3, Y3, '-o', c='b', label='prediction')
 #             plt.plot(X3, Y4, '-*', c='g', label='valid')
-#     
+#             plt.xlabel('Days')
+#             plt.ylabel('Normalized close price')
 #             plt.legend()
-#             plt.savefig('mvm_res/'+name+str(debug_cnt)+'.png')
+#             plt.savefig('mvm_res/'+name+str(debug_cnt)+'.pdf')
 #             plt.clf()
 #             
 #             debug_cnt += 1
-#             if debug_cnt > 9:
+#             if debug_cnt > 15:
 #                 break
 # =============================================================================
             
+        evaluation_res = exp_right/exp_total
+        print("P:", evaluation_res)
+        print("RMSE:", np.sqrt(RMSE/exp_total))
+        print("miss rate: ", exp_miss_count*1.0/exp_total_count)
 # =============================================================================
 #             # draw picture
 #             plt.figure(figsize=(10, 8))

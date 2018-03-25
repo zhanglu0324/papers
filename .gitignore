@@ -13,4 +13,11 @@ __pycache__
 .DS_Store
 
 # pictures
-mvm_res
+*.pdf
+*.png
+
+# checkpoint
+model_save
+sv_log
+
+

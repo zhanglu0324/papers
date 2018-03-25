@@ -67,12 +67,12 @@ correspondence, distance = minimal_variance_matching(t1, t2)
 # 绘制示意图
 t3 = list(map(lambda x:x+8, t2))
 X1 = list(range(len(t2))) 
-plt.plot(X1, t3, '-x', c='k', label='T')
+plt.plot(X1, t3, '-x', c='steelblue', label='T')
 path_0, path_1 = list(zip(*correspondence))
 X2 = list(map(lambda x:x+(path_1[-1]+path_1[0]-len(t1))/2, path_0))
-plt.plot(X2, t1, '->', c='r', label='Q')
+plt.plot(X2, t1, '->', c='darkred', label='Q')
 for i in range(len(t1)):
     plt.plot([X2[i], path_1[i]], [t1[i], t3[path_1[i]]], '--', c='k')
 plt.legend()
-plt.show()
+plt.savefig('test_figure/mvm.pdf')
 

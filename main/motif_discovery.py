@@ -16,9 +16,9 @@ import pandas as pd
 
 # ------- Config -------
 data_dir = '../data/'
-u2d_error = 0.015
-u2d_split_length = 15
-cutoff_present = 0.05
+u2d_error = 0.02
+u2d_split_length = 12
+cutoff_present = 0.10
 cluster_num = 10
 train_present = 0.8
 test_present = 0.2
@@ -35,8 +35,9 @@ for path in os.listdir(data_dir):
         adj_close = scale(adj_close)
         
         adj_close_data_length = len(adj_close)
-        train_data = adj_close[int(adj_close_data_length * train_present):]
-        test_data = adj_close[:int(adj_close_data_length * test_present)]
+        tt_threshold = int(adj_close_data_length * train_present)
+        train_data = adj_close[:tt_threshold]
+        test_data = adj_close[tt_threshold:]
         
         # ------- Pattern Discovery -------
         u2d_adj_close_index = up2down(train_data, u2d_error)
@@ -85,15 +86,24 @@ for path in os.listdir(data_dir):
 
         c_rho = []
         c_delta = []
-
-        mul_res = np.zeros(barrel_length, dtype=np.float)
+        
         center_set = []
 
-        for i in range(barrel_length):
-            mul_res[i] = rho[i] * delta[i]
-            top_k = heapq.nlargest(cluster_num, mul_res)
+        
 
         print(name)
+        
+        rho_threshold = max(rho)/3.0
+        delta_threshold = max(delta)/10.0
+        
+        for i in range(barrel_length):
+            if rho[i] > rho_threshold and delta[i] > delta_threshold:
+                c_rho.append(rho[i])
+                c_delta.append(delta[i])
+                center_tmp = scale(barrel[i])
+                center_set.append(center_tmp)
+        
+        cluster_num = len(center_set)   
 # =============================================================================
 #         print(barrel_length)
 #         print(rho)
@@ -102,19 +112,24 @@ for path in os.listdir(data_dir):
 #         print(topk)
 #         print('\n')
 # =============================================================================
-
-        for i in range(barrel_length):
-            if mul_res[i] in top_k:
-                c_rho.append(rho[i])
-                c_delta.append(delta[i])
-                center_tmp = scale(barrel[i])
-                center_set.append(center_tmp)
-
-        plt.scatter(rho, delta, c="k")
-        plt.scatter(c_rho, c_delta, c="r")
-        plt.plot([0,max(rho)],[cutoff_distance]*2, '--', c='b')
-        plt.savefig('exp_res/'+name+'.pdf')
-        plt.clf()
+        
+# =============================================================================
+#         plt.scatter(rho, delta, c="k", label='others')
+#         plt.scatter(c_rho, c_delta, c="r", label='cluster center')
+#         plt.plot([0,max(rho)],[delta_threshold]*2, '--', c='b')
+#         plt.plot([rho_threshold]*2,[0,max(delta)], '--', c='b')
+#         plt.annotate(r'$\rho_c$',xy=(rho_threshold, max(delta)*0.6),
+#                      xytext=(rho_threshold*1.3, max(delta)*0.8), 
+#                      arrowprops=dict(facecolor='k', headlength=10, headwidth=5, width=1))
+#         plt.annotate(r'$\delta_c$',xy=(max(rho)*0.75, delta_threshold),
+#                      xytext=(max(rho)*0.8, delta_threshold*3.0), 
+#                      arrowprops=dict(facecolor='k', headlength=10, headwidth=5, width=1))
+#         plt.xlabel(r'$\rho$')
+#         plt.ylabel(r'$\delta$')
+#         plt.legend()
+#         plt.savefig('dp_res/'+name+'.pdf')
+#         plt.clf()
+# =============================================================================
 
 # =============================================================================
 #         center_length = []
@@ -129,8 +144,8 @@ for path in os.listdir(data_dir):
         # ------- Prediction -------
         split_length = u2d_split_length
         
-        exp_total = np.ones(prediction_step_length, dtype=np.float)
-        exp_right = np.ones(prediction_step_length, dtype=np.float)
+        exp_total = np.zeros(prediction_step_length, dtype=np.float)
+        exp_right = np.zeros(prediction_step_length, dtype=np.float)
         
         debug_cnt = 0
         for i in range(len(test_data) - split_length):
