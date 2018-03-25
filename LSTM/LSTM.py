@@ -14,14 +14,14 @@ class Config(object):
     input_size = 1
     batch_size = 1
     num_steps = 30
-    hidden_size = 128
-    output_size = 1
+    hidden_size = 32
+    output_size = 5
 
     num_layers = 1
-    keep_prob = 0.5
+    keep_prob = 0.8
 
     learning_rate = 0.001
-    training_iter = 10000
+    training_iter = 12000
 
 
 class InputProducer(object):
@@ -82,8 +82,11 @@ class LSTModel(object):
         
         self._x, self._y = input_.next_batch(batch_size, num_steps, input_size, output_size)
 
-        if is_training and config.keep_prob < 1:
-            self._x = tf.nn.dropout(self._x, config.keep_prob)
+# =============================================================================
+#         # 不在输入层进行dropout
+#         if is_training and config.keep_prob < 1:
+#             self._x = tf.nn.dropout(self._x, config.keep_prob)
+# =============================================================================
 
         _X = tf.reshape(self._x, [-1, input_size])
         _X = tf.matmul(_X, weights["hidden"]) + biases["hidden"]

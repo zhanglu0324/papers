@@ -22,7 +22,7 @@ import pandas as pd
 # =============================================================================
 
 data_dir = '../data/'
-name = 'AAPL'
+name = 'VTI'
 train_present = 0.8
 
 
@@ -37,11 +37,15 @@ test_data = close_price[tt_threshold:]
 
 train_producer = InputProducer(train_data, Config)
 with tf.variable_scope("Model"):
-    train_model = LSTModel(is_training=True, config=Config, input_=train_producer)
+    T_train_model = LSTModel(is_training=True, config=Config, input_=train_producer)
 
 test_producer = InputProducer(test_data, Config)
 with tf.variable_scope("Model", reuse=True):
     test_model = LSTModel(is_training=False, config=Config, input_=test_producer)
+    
+with tf.variable_scope("Model", reuse=True):
+    train_model = LSTModel(is_training=False, config=Config, input_=train_producer)
+
     
 
 init = tf.global_variables_initializer()
@@ -62,7 +66,7 @@ with sv.managed_session() as sess:
     sess.run(init)
 
     for i in range(Config.training_iter):
-        sess.run(train_model.optimizer)
+        sess.run(T_train_model.optimizer)
     
 # =============================================================================
 #     if i % 100 == 0:
@@ -83,41 +87,113 @@ with sv.managed_session() as sess:
 
     prd_len = 1000
 
-    Train_Right = np.zeros(Config.output_size, dtype=np.float)
-    Train_RMSE = np.zeros(Config.output_size, dtype=np.float)
+    Train_Right = np.zeros(Config.shift, dtype=np.float)
+    Train_RMSE = np.zeros(Config.shift, dtype=np.float)
 
     for i in range(prd_len):
         x, y, p = sess.run([train_model.input, train_model.valid, train_model.predict])
         x = x.reshape(-1)
         y = y.reshape(-1)
         p = p.reshape(-1)
-        lax = x[-1]
-        for j in range(Config.output_size):
-            if ((y[j]-lax)*(p[j]-lax) > 0):
+        
+        lax = x[-Config.shift-1]
+        for j in range(Config.shift):
+            pos = -Config.shift+j
+            if ((y[pos]-lax)*(p[pos]-lax) > 0):
                 Train_Right[j] += 1
-            Train_RMSE[j] += pow(y[j]-p[j], 2)
+            Train_RMSE[j] += pow(y[pos]-p[pos], 2)
+            
+        
     #print(x, y, p)
 
     print("Train_Right:", Train_Right/prd_len)
     print("Train_RMSE:", np.sqrt(Train_RMSE/prd_len))
     
-    Test_Right = np.zeros(Config.output_size, dtype=np.float)
-    Test_RMSE = np.zeros(Config.output_size, dtype=np.float)
+    Test_Right = np.zeros(Config.shift, dtype=np.float)
+    Test_RMSE = np.zeros(Config.shift, dtype=np.float)
 
     for i in range(prd_len):
         x, y, p = sess.run([test_model.input, test_model.valid, test_model.predict])
         x = x.reshape(-1)
         y = y.reshape(-1)
         p = p.reshape(-1)
-        lax = x[-1]
-        for j in range(Config.output_size):
-            if ((y[j]-lax)*(p[j]-lax) > 0):
+        lax = x[-Config.shift-1]
+        for j in range(Config.shift):
+            pos = -Config.shift+j
+            if ((y[pos]-lax)*(p[pos]-lax) > 0):
                 Test_Right[j] += 1
-            Test_RMSE[j] += pow(y[j]-p[j], 2)
+            Test_RMSE[j] += pow(y[pos]-p[pos], 2)
+# =============================================================================
+#         if ((y[-1]-x[-1])*(p[-1]-x[-1]) >= 0):
+#             Test_Right[0] += 1
+#         Test_RMSE[0] += pow(y[-1]-p[-1], 2)
+# =============================================================================
+        
     #print(x, y, p)
 
     print("Test_Right:", Test_Right/prd_len)
     print("Test_RMSE:", np.sqrt(Test_RMSE/prd_len))
+    
+    
+    draw_len = 120
+    shift = Config.shift
+    
+    Draw_Y = np.zeros(draw_len, dtype=np.float)
+    Draw_P = np.zeros(draw_len, dtype=np.float)
+    for i in range(draw_len):
+        y, p = sess.run([test_model.valid, test_model.predict])
+        y = y.reshape(-1)
+        p = p.reshape(-1)
+        Draw_Y[i] = y[-shift]
+        Draw_P[i] = p[-shift]
+    
+    Draw_TY = np.zeros(draw_len, dtype=np.float)
+    Draw_TP = np.zeros(draw_len, dtype=np.float)
+    for i in range(draw_len):
+        y, p = sess.run([train_model.valid, train_model.predict])
+        y = y.reshape(-1)
+        p = p.reshape(-1)
+        Draw_TY[i] = y[-shift]
+        Draw_TP[i] = p[-shift]
+    
+    import matplotlib.pyplot as plt
+    
+    plt.figure(figsize=(12, 8))
+    plt.plot(Draw_Y, '-o', color='darkred', label='Valid')
+    plt.plot(Draw_P, '->', color='steelblue', label='Predict')
+    plt.legend()
+    #plt.show()
+    plt.savefig('lstm_figure/tuple3.png')
+    plt.clf()
+    
+    plt.plot(Draw_TY, '-o', color='darkred', label='Valid')
+    plt.plot(Draw_TP, '->', color='steelblue', label='Predict')
+    plt.legend()
+    #plt.show()
+    plt.savefig('lstm_figure/tuple3_t.png')
+    plt.close()
+    
+    
+# =============================================================================
+#     Draw_TY = np.zeros(draw_len, dtype=np.float)
+#     Draw_TP = []
+#     for i in range(draw_len):
+#         y, p = sess.run([train_model.valid, train_model.predict])
+#         y = y.reshape(-1)
+#         p = p.reshape(-1)
+#         Draw_TY[i] = y[-shift]
+#         Draw_TP.append(p[-shift:])
+#     
+#     import matplotlib.pyplot as plt
+#     plt.figure(figsize=(12, 8))
+#     plt.plot(Draw_TY, '-o', color='darkred', label='Valid')
+#     for i in range(draw_len):
+#         plt.plot(list(range(i,i+shift)), Draw_TP[i], color='steelblue')
+#     plt.legend()
+#     #plt.show()
+#     plt.savefig('lstm_figure/tuple3_t.pdf')
+#     plt.close()
+# =============================================================================
 
 
 

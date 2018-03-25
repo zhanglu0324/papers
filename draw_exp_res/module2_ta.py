@@ -37,7 +37,7 @@ for i in range(3):
             color=color_index[i], label=label_index[i])
 ax1.set_title('AAPL')
 ax1.set_ylabel('Precision') 
-ax1.set_ylabel('Days')
+ax1.set_xlabel('Days')
 ax1.set_ylim(0.4, 0.7)
 plt.legend()
 plt.savefig('pictures/AAPL_TA.pdf')

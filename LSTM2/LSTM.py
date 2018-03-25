@@ -15,13 +15,14 @@ class Config(object):
     batch_size = 1
     num_steps = 30
     hidden_size = 32
-    output_size = 5
+    output_size = 1
+    shift = 5
 
     num_layers = 1
-    keep_prob = 0.6
+    keep_prob = 0.8
 
     learning_rate = 0.001
-    training_iter = 5000
+    training_iter = 12000
 
 
 class InputProducer(object):
@@ -30,16 +31,16 @@ class InputProducer(object):
         self.length = len(series)
 
     # seq2point producer
-    # output_size 即为平移位数
-    def next_batch(self, batch_size, num_steps, input_size, output_size):
-        batch_len = batch_size * (input_size * num_steps + output_size)
+    # shift: 输出偏移幅度
+    def next_batch(self, batch_size, num_steps, input_size, output_size, shift):
+        batch_len = batch_size * (input_size * num_steps + shift)
 
         i = tf.train.range_input_producer(self.length - batch_len, shuffle=False).dequeue()
         data = tf.strided_slice(self.series, [i], [i + batch_len])
         data = tf.reshape(data, [batch_size, -1])
         
         x = tf.slice(data, [0, 0], [batch_size, num_steps * input_size])
-        y = tf.slice(data, [0, num_steps], [batch_size, output_size])
+        y = tf.slice(data, [0, shift], [batch_size, num_steps * output_size])
         return x, y
 
 
@@ -81,7 +82,7 @@ class LSTModel(object):
                                       initializer=tf.constant_initializer(0.0), dtype=tf.float64)
         }
         
-        self._x, self._y = input_.next_batch(batch_size, num_steps, input_size, output_size)
+        self._x, self._y = input_.next_batch(batch_size, num_steps, input_size, output_size, config.shift)
 
         if is_training and config.keep_prob < 1:
             self._x = tf.nn.dropout(self._x, config.keep_prob)
@@ -97,7 +98,8 @@ class LSTModel(object):
 
         outputs, states = tf.contrib.rnn.static_rnn(cell, unstack_x, initial_state=self._initial_state)
 
-        outputs = outputs[-1:]
+        # outputs = outputs[-1:]
+
         output = tf.reshape(tf.concat(axis=1, values=outputs), [-1, hidden_size])
         self._predict = tf.matmul(output, weights["output"]) + biases["output"]
 

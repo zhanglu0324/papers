@@ -22,7 +22,7 @@ import pandas as pd
 # =============================================================================
 
 data_dir = '../data/'
-name = 'AAPL'
+name = 'SPY'
 train_present = 0.8
 
 
@@ -132,6 +132,15 @@ with sv.managed_session() as sess:
         Draw_Y[i] = y[0]
         Draw_P[i] = p[0]
     
+    Draw_TY = np.zeros(draw_len, dtype=np.float)
+    Draw_TP = np.zeros(draw_len, dtype=np.float)
+    for i in range(draw_len):
+        y, p = sess.run([train_model.valid, train_model.predict])
+        y = y.reshape(-1)
+        p = p.reshape(-1)
+        Draw_TY[i] = y[0]
+        Draw_TP[i] = p[0]
+    
     import matplotlib.pyplot as plt
     
     plt.figure(figsize=(12, 8))
@@ -140,6 +149,14 @@ with sv.managed_session() as sess:
     plt.legend()
     #plt.show()
     plt.savefig('lstm_figure/tuple3.png')
+    plt.clf()
+    
+    plt.plot(Draw_TY, '-o', color='darkred', label='Valid')
+    plt.plot(Draw_TP, '->', color='steelblue', label='Predict')
+    plt.legend()
+    #plt.show()
+    plt.savefig('lstm_figure/tuple3_t.png')
+    plt.close()
     
 
 
