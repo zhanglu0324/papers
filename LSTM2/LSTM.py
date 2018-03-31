@@ -13,7 +13,7 @@ from sklearn.preprocessing import scale
 class Config(object):
     input_size = 1
     batch_size = 1
-    num_steps = 30
+    num_steps = 12
     hidden_size = 32
     output_size = 1
     shift = 5
@@ -22,7 +22,7 @@ class Config(object):
     keep_prob = 0.8
 
     learning_rate = 0.001
-    training_iter = 12000
+    training_iter = 10000
 
 
 class InputProducer(object):

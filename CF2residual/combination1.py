@@ -6,7 +6,7 @@
 # =============================================================================
 
 from up2down import up2down
-from sklearn.preprocessing import scale, StandardScaler
+from sklearn.preprocessing import scale
 from dtw import dtw
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,9 +17,8 @@ from clstm1 import LSTModel, InputProducer
 import tensorflow as tf
 
 
-name = 'AAPL'
+name = 'VTI'
 infile = open('rpd/'+name+'.txt', 'r')
-print(name)
 
 center_length = int(infile.readline().strip())
 centers = []
@@ -37,20 +36,14 @@ class Config(object):
     shift = 5
 
     num_layers = 1
-    keep_prob = 1
+    keep_prob = 0.8
 
     learning_rate = 0.001
-    training_iter = 10000
+    training_iter = 12000
     
     
 def PPEM(local_segment, centers, Config):
-    # local_segment = scale(local_segment)
-# =============================================================================
-#     local_segment = local_segment.reshape(-1, 1)
-#     scaler1 = StandardScaler().fit(local_segment)
-#     local_segment = scaler1.transform(local_segment)
-#     local_segment = local_segment.reshape(-1)
-# =============================================================================
+    local_segment = scale(local_segment)
     
     cluster_num = len(centers)
     center_set = centers
@@ -61,7 +54,7 @@ def PPEM(local_segment, centers, Config):
     mvm_correspondence_recorder = []
     for i in range(cluster_num):
         mvm_correspondence, mvm_distance = minimal_variance_matching(
-                local_segment, center_set[i], skip_elements=3)
+                local_segment, center_set[i], skip_elements=2)
         mvm_distance_recorder[i] = mvm_distance
         mvm_correspondence_recorder.append(mvm_correspondence)
             
@@ -84,15 +77,11 @@ def PPEM(local_segment, centers, Config):
         res = list(map(lambda x: x+(local_segment[-1]-mvm_target[path_1[-1]]), res))
     else:
         res = [local_segment[-1]] * prediction_step_length
-    
-# =============================================================================
-#     res = res * scaler1.scale_ + scaler1.mean_
-# =============================================================================
     return res
 
 
 data_dir = '../data/'
-train_present = 0.7
+train_present = 0.8
 
 
 price = pd.read_csv(os.path.join(data_dir, name+'.csv'))
@@ -130,7 +119,7 @@ with sv.managed_session() as sess:
     
     sv.saver.save(sess, 'model_save/')
     
-    prd_len = 500
+    prd_len = 1000
 
     Train_Right = np.zeros(Config.shift, dtype=np.float)
     Train_RMSE = np.zeros(Config.shift, dtype=np.float)
@@ -141,7 +130,7 @@ with sv.managed_session() as sess:
         y = y.reshape(-1)
         p = p.reshape(-1)
         
-        lax = y[-Config.shift-1]
+        lax = x[-1]
         for j in range(Config.shift):
             pos = -Config.shift+j
             if ((y[pos]-lax)*(p[pos]-lax) > 0):
@@ -168,16 +157,13 @@ with sv.managed_session() as sess:
         x = x.reshape(-1)
         y = y.reshape(-1)
         p = p.reshape(-1)
-# =============================================================================
-#         lax = y[-Config.shift-1]
-# =============================================================================
-        lax = x[-1]
+        
         y = y[-Config.shift:]
         p = p[-Config.shift:]
-        
-        
         ppem = PPEM(x, centers, Config)
         
+        
+        lax = x[-1]
         for j in range(Config.shift):
             if ((y[j]-lax)*(p[j]-lax) > 0):
                 Test_Right[j] += 1
@@ -189,9 +175,7 @@ with sv.managed_session() as sess:
                     PPEM_Right[j] += 1
                 PPEM_RMSE[j] += pow(y[j]-ppem[j], 2)
                 # 线性加权组合模型
-                p = list(map(lambda x:x+0.697, p))
-                ppem = list(map(lambda x:x+0.303, ppem))
-                comb = p + ppem
+                comb = (p+ppem)/2
             else:
                 comb = p
             

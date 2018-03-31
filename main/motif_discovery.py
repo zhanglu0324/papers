@@ -16,11 +16,11 @@ import pandas as pd
 
 # ------- Config -------
 data_dir = '../data/'
-u2d_error = 0.02
+u2d_error = 0.015
 u2d_split_length = 12
-cutoff_present = 0.10
+cutoff_present = 0.08
 cluster_num = 10
-train_present = 0.8
+train_present = 0.7
 test_present = 0.2
 prediction_step_length = 5
 # ----------------------

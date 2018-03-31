@@ -22,8 +22,8 @@ import pandas as pd
 # =============================================================================
 
 data_dir = '../data/'
-name = 'VTI'
-train_present = 0.8
+name = 'AAPL'
+train_present = 0.7
 
 
 price = pd.read_csv(os.path.join(data_dir, name+'.csv'))
@@ -95,13 +95,13 @@ with sv.managed_session() as sess:
         x = x.reshape(-1)
         y = y.reshape(-1)
         p = p.reshape(-1)
-        
-        lax = x[-Config.shift-1]
+        y = y[-Config.shift:]
+        p = p[-Config.shift:]
+        lax = x[-1]
         for j in range(Config.shift):
-            pos = -Config.shift+j
-            if ((y[pos]-lax)*(p[pos]-lax) > 0):
+            if ((y[j]-lax)*(p[j]-lax) > 0):
                 Train_Right[j] += 1
-            Train_RMSE[j] += pow(y[pos]-p[pos], 2)
+            Train_RMSE[j] += pow(y[j]-p[j], 2)
             
         
     #print(x, y, p)
@@ -117,12 +117,13 @@ with sv.managed_session() as sess:
         x = x.reshape(-1)
         y = y.reshape(-1)
         p = p.reshape(-1)
-        lax = x[-Config.shift-1]
+        y = y[-Config.shift:]
+        p = p[-Config.shift:]
+        lax = x[-1]
         for j in range(Config.shift):
-            pos = -Config.shift+j
-            if ((y[pos]-lax)*(p[pos]-lax) > 0):
+            if ((y[j]-lax)*(p[j]-lax) > 0):
                 Test_Right[j] += 1
-            Test_RMSE[j] += pow(y[pos]-p[pos], 2)
+            Test_RMSE[j] += pow(y[j]-p[j], 2)
 # =============================================================================
 #         if ((y[-1]-x[-1])*(p[-1]-x[-1]) >= 0):
 #             Test_Right[0] += 1
@@ -133,6 +134,7 @@ with sv.managed_session() as sess:
 
     print("Test_Right:", Test_Right/prd_len)
     print("Test_RMSE:", np.sqrt(Test_RMSE/prd_len))
+    print(name)
     
     
     draw_len = 120

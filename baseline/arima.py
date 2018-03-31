@@ -15,20 +15,22 @@ from statsmodels.graphics.api import qqplot
 
 
 data_dir = '../data/'
-price = pd.read_csv(os.path.join(data_dir, 'VTI.csv'))
-name = 'AAPL'
+name = 'VTI'
+price = pd.read_csv(os.path.join(data_dir, name+'.csv'))
 close_price = price.iloc[:, 4].values
 close_price = scale(close_price)
 
-date1 = 1801
-trainlen = 300
+date1 = 1501
+trainlen = 100
 prdlen=5
 
 exp_total = np.ones(prdlen, dtype=np.float)
 exp_right = np.ones(prdlen, dtype=np.float)
 RMSE = np.ones(prdlen, dtype=np.float)
 
-for i in range(0, 200):
+wrongs = 0
+
+for i in range(400, 650):
     dta = close_price[i:i+trainlen]
     
     begin = dta[-1]
@@ -38,7 +40,7 @@ for i in range(0, 200):
     
     try:
         dta.index = pd.Index(sm.tsa.datetools.dates_from_range(str(date1+i),str(date1+i+trainlen-1)))
-        arma_mod20 = sm.tsa.ARIMA(dta,(2,1,1),freq='A').fit()
+        arma_mod20 = sm.tsa.ARIMA(dta,(3,1,2),freq='A').fit()
         predict_sunspots = arma_mod20.predict(str(date1+i+trainlen), str(date1+i+trainlen+prdlen-1), dynamic=True)
         res = predict_sunspots.values
         valid = close_price[i+trainlen:i+trainlen+prdlen]
@@ -53,6 +55,7 @@ for i in range(0, 200):
             if (res[i]-begin) * (valid[i]-begin) >= 0:
                 exp_right[i] += 1
     except:
+        wrongs += 1
         pass
     
 # =============================================================================
@@ -76,6 +79,7 @@ for i in range(0, 200):
 evaluation_res = exp_right/exp_total
 print("P:", evaluation_res)
 print("RMSE:", np.sqrt(RMSE/exp_total))
+print("wrongs:", wrongs)
                 
 # =============================================================================
 # # time and index

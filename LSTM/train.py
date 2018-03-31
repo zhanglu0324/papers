@@ -12,7 +12,6 @@ import tensorflow as tf
 import os
 import pandas as pd
 
-
 # =============================================================================
 # # no summary, no need
 # =============================================================================
@@ -22,8 +21,8 @@ import pandas as pd
 # =============================================================================
 
 data_dir = '../data/'
-name = 'SPY'
-train_present = 0.8
+name = 'AAPL'
+train_present = 0.7
 
 
 price = pd.read_csv(os.path.join(data_dir, name+'.csv'))
@@ -120,6 +119,7 @@ with sv.managed_session() as sess:
 
     print("Test_Right:", Test_Right/prd_len)
     print("Test_RMSE:", np.sqrt(Test_RMSE/prd_len))
+    print(name)
     
     
     draw_len = 120

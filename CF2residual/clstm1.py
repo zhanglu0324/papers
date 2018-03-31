@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# LSTM核心代码
+# LSTM 2核心代码 拓扑结构1
 # 作者：张璐
 # 时间：2018-03-25
 # =============================================================================
@@ -10,35 +10,22 @@ import tensorflow as tf
 from sklearn.preprocessing import scale
 
 
-class Config(object):
-    input_size = 1
-    batch_size = 1
-    num_steps = 12
-    hidden_size = 32
-    output_size = 5
-
-    num_layers = 1
-    keep_prob = 0.6
-
-    learning_rate = 0.001
-    training_iter = 5000
-
-
 class InputProducer(object):
     def __init__(self, series, config):
         self.series = scale(series)
         self.length = len(series)
 
     # seq2point producer
-    def next_batch(self, batch_size, num_steps, input_size, output_size):
-        batch_len = batch_size * (input_size * num_steps + output_size)
+    # shift: 输出偏移幅度
+    def next_batch(self, batch_size, num_steps, input_size, output_size, shift):
+        batch_len = batch_size * (input_size * num_steps + shift)
 
         i = tf.train.range_input_producer(self.length - batch_len, shuffle=False).dequeue()
         data = tf.strided_slice(self.series, [i], [i + batch_len])
         data = tf.reshape(data, [batch_size, -1])
         
         x = tf.slice(data, [0, 0], [batch_size, num_steps * input_size])
-        y = tf.slice(data, [0, num_steps], [batch_size, output_size])
+        y = tf.slice(data, [0, shift], [batch_size, num_steps * output_size])
         return x, y
 
 
@@ -80,13 +67,10 @@ class LSTModel(object):
                                       initializer=tf.constant_initializer(0.0), dtype=tf.float64)
         }
         
-        self._x, self._y = input_.next_batch(batch_size, num_steps, input_size, output_size)
+        self._x, self._y = input_.next_batch(batch_size, num_steps, input_size, output_size, config.shift)
 
-# =============================================================================
-#         # 不在输入层进行dropout
-#         if is_training and config.keep_prob < 1:
-#             self._x = tf.nn.dropout(self._x, config.keep_prob)
-# =============================================================================
+        if is_training and config.keep_prob < 1:
+            self._x = tf.nn.dropout(self._x, config.keep_prob)
 
         _X = tf.reshape(self._x, [-1, input_size])
         _X = tf.matmul(_X, weights["hidden"]) + biases["hidden"]
@@ -99,7 +83,8 @@ class LSTModel(object):
 
         outputs, states = tf.contrib.rnn.static_rnn(cell, unstack_x, initial_state=self._initial_state)
 
-        outputs = outputs[-1:]
+        # outputs = outputs[-1:]
+
         output = tf.reshape(tf.concat(axis=1, values=outputs), [-1, hidden_size])
         self._predict = tf.matmul(output, weights["output"]) + biases["output"]
 
